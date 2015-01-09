@@ -82,6 +82,8 @@ namespace FilenameNormalizer
 
         #endregion
 
+        #region lsbFiles
+
         private void lsbFiles_Clean()
         {
             lsbFiles.Items.Clear();
@@ -97,12 +99,16 @@ namespace FilenameNormalizer
             lsbFiles.TopIndex = Math.Max(lsbFiles.Items.Count - visibleItems + 1, 0);
         }
 
+        #endregion
+
+        #region CreationDate
+
         /// <summary>
         /// Returns the EXIF Image Data of the Date Taken.
         /// </summary>
         /// <param name="getImage">Image (If based on a file use Image.FromFile(f);)</param>
         /// <returns>Date Taken or Null if Unavailable</returns>
-        public static DateTime? DateTaken(Image getImage)
+        public static DateTime? ExifDateTaken(Image getImage)
         {
             int DateTakenValue = 0x9003; //36867;
 
@@ -121,7 +127,7 @@ namespace FilenameNormalizer
             return new DateTime(year, month, day, hour, minute, second);
         }
 
-        public static DateTime FirstDate(string filePath)
+        public static DateTime GetFileCreationDate(string filePath)
         {
             DateTime dtFile;
 
@@ -141,7 +147,7 @@ namespace FilenameNormalizer
             if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
             {
                 Image img = Image.FromFile(filePath);
-                DateTime? dtTaken = DateTaken(img);
+                DateTime? dtTaken = ExifDateTaken(img);
                 if (dtTaken != null)
                 {
                     dtFile = (DateTime)dtTaken;
@@ -152,33 +158,40 @@ namespace FilenameNormalizer
             return dtFile;
         }
 
+        #endregion
+
+        private void ProcessFile(string filePath, string fileName, bool doMove)
+        {
+            DateTime dtFile = GetFileCreationDate(filePath);
+            string ext = Path.GetExtension(filePath).ToLower();
+            string fileDirPath = Path.GetDirectoryName(filePath);
+            string newFilePath = string.Format("{0}/{1}{2}{3}", fileDirPath, dtFile.ToString("yyyyMMdd-HHmmss"), txtSuffix.Text, ext);
+
+            if (doMove)
+            {
+                int retry = 1;
+                while (File.Exists(newFilePath))
+                {
+                    newFilePath = string.Format("{0}/{1}-{2}{3}{4}", fileDirPath, dtFile.ToString("yyyyMMdd-HHmmss"), retry, txtSuffix.Text, ext);
+                    retry++;
+                }
+                File.Move(filePath, newFilePath);
+            }
+
+            lsbFiles_AddLine(string.Format("RenameTo: {0} {1} ", fileName, newFilePath));
+        }
+
         private void ProcessDirectory(string path, bool doMove)
         {
             string[] filePaths = Directory.GetFiles(path);
+
             foreach (string filePath in filePaths)
             {
                 string fileName = Path.GetFileName(filePath);
 
                 if (cbFilter_ApplyFilter(fileName))
                 {
-                    DateTime dtFile = FirstDate(filePath);
-                    string ext = Path.GetExtension(filePath).ToLower();
-                    string fileDirPath = Path.GetDirectoryName(filePath);
-                    string newFilePath = string.Format("{0}/{1}{2}{3}", fileDirPath, dtFile.ToString("yyyyMMdd-HHmmss"), txtSuffix.Text, ext);
-
-
-                    if (doMove)
-                    {
-                        int retry = 1;
-                        while (File.Exists(newFilePath))
-                        {
-                            newFilePath = string.Format("{0}/{1}-{2}{3}{4}", fileDirPath, dtFile.ToString("yyyyMMdd-HHmmss"), retry, txtSuffix.Text, ext);
-                            retry++;
-                        }
-                        File.Move(filePath, newFilePath);
-                    }
-
-                    lsbFiles_AddLine(string.Format("RenameTo: {0} {1} ", fileName, newFilePath));
+                    ProcessFile(filePath, fileName, doMove);
                 }
                 else
                 {
