@@ -176,6 +176,17 @@ namespace FilenameNormalizer
                     retry++;
                 }
                 File.Move(filePath, newFilePath);
+
+                // Move metainfo 
+                string metainfoFile = string.Format("{0}.xml", filePath);
+                if (File.Exists(metainfoFile))
+                {
+                    string newMetainfoFile = string.Format("{0}.xml", newFilePath);
+                    if (File.Exists(newMetainfoFile) == false)
+                    {
+                        File.Move(metainfoFile, newMetainfoFile);
+                    }
+                }
             }
 
             lsbFiles_AddLine(string.Format("RenameTo: {0} {1} ", fileName, newFilePath));
