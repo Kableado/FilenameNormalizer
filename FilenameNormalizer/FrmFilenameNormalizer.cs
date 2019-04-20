@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using System.IO;
+using System.Linq;
+using System.Windows.Forms;
 
 namespace FilenameNormalizer
 {
@@ -130,20 +126,12 @@ namespace FilenameNormalizer
         public static DateTime GetFileCreationDate(string filePath)
         {
             DateTime dtFile;
-
-            string ext = Path.GetExtension(filePath).ToLower();
-
+            
             DateTime dtCretation = File.GetCreationTime(filePath);
             DateTime dtLastMod = File.GetLastWriteTime(filePath);
-            if (dtCretation < dtLastMod)
-            {
-                dtFile = dtCretation;
-            }
-            else
-            {
-                dtFile = dtLastMod;
-            }
+            dtFile = (dtCretation < dtLastMod) ? dtCretation : dtLastMod;
 
+            string ext = Path.GetExtension(filePath).ToLower();
             if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
             {
                 Image img = Image.FromFile(filePath);
